@@ -1,0 +1,71 @@
+# Custom Function for the Terminal Menu
+function Show-Menu {
+    param (
+        [string]$Title = "GEMINI TERMINAL MULTI-TOOL 2026",
+        [array]$Options = @()
+    )
+
+    $selectedIndex = 0
+    $key = $null
+
+    while ($key -ne "Enter") {
+        Clear-Host
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "      $Title" -ForegroundColor White -BackgroundColor DarkBlue
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host " Use UP/DOWN arrows and press ENTER:" -ForegroundColor Gray
+        Write-Host ""
+
+        for ($i = 0; $i -lt $Options.Count; $i++) {
+            if ($i -eq $selectedIndex) {
+                Write-Host "  > $($Options[$i])" -ForegroundColor Black -BackgroundColor White
+            } else {
+                Write-Host "    $($Options[$i])" -ForegroundColor White
+            }
+        }
+
+        $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown").VirtualKeyCode
+        if ($key -eq 38) { $selectedIndex = ($selectedIndex - 1 + $Options.Count) % $Options.Count } # Up
+        if ($key -eq 40) { $selectedIndex = ($selectedIndex + 1) % $Options.Count } # Down
+        if ($key -eq 13) { return $selectedIndex } # Enter
+    }
+}
+
+# --- Main Logic ---
+$menuOptions = @(
+    "1. Open Microsoft Edge",
+    "2. Close Microsoft Edge",
+    "3. Open File Explorer",
+    "4. Close File Explorer (Restart Taskbar)",
+    "5. Open Settings",
+    "6. Open Microsoft Store",
+    "7. Open Calculator",
+    "8. Close Calculator",
+    "9. Take Screenshot (Full Screen)",
+    "10. RESTART LAPTOP",
+    "11. SHUTDOWN LAPTOP",
+    "EXIT"
+)
+
+do {
+    $choice = Show-Menu -Options $menuOptions
+    
+    switch ($choice) {
+        0 { Start-Process "msedge" }
+        1 { Stop-Process -Name "msedge" -ErrorAction SilentlyContinue }
+        2 { Start-Process "explorer.exe" }
+        3 { Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue }
+        4 { Start-Process "ms-settings:" }
+        5 { Start-Process "ms-windows-store:" }
+        6 { Start-Process "calc.exe" }
+        7 { Stop-Process -Name "CalculatorApp" -ErrorAction SilentlyContinue }
+        8 { 
+            Add-Type -AssemblyName System.Windows.Forms
+            [System.Windows.Forms.SendKeys]::SendWait("{PRTSC}")
+            Write-Host "Screenshot copied to Clipboard!" -ForegroundColor Green; Start-Sleep 1 
+          }
+        9 { Restart-Computer -Confirm }
+        10 { Stop-Computer -Confirm }
+        11 { exit }
+    }
+} while ($true)
