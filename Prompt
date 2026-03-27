@@ -1,52 +1,69 @@
-# Custom Function for the Terminal Menu
-function Show-Menu {
-    param (
-        [string]$Title = "GEMINI TERMINAL MULTI-TOOL 2026",
-        [array]$Options = @()
-    )
+# --- Configuration & Colors ---
+$Host.UI.RawUI.WindowTitle = "GEMINI TERMINAL MULTI-TOOL v2.0"
+$green = [System.ConsoleColor]::Green
+$darkGreen = [System.ConsoleColor]::DarkGreen
+$white = [System.ConsoleColor]::White
+$red = [System.ConsoleColor]::Red
 
+function Show-Header {
+    Clear-Host
+    Write-Host @"
+    ######################################################
+    #                                                    #
+    #   ██████╗ ███████╗███╗   ███╗██╗███╗   ██╗██╗      #
+    #  ██╔════╝ ██╔════╝████╗ ████║██║████╗  ██║██║      #
+    #  ██║  ███╗█████╗  ██╔████╔██║██║██╔██╗ ██║██║      #
+    #  ██║   ██║██╔══╝  ██║╚██╔╝██║██║██║╚██╗██║╚═╝      #
+    #  ╚██████╔╝███████╗██║ ╚═╝ ██║██║██║ ╚████║██╗      #
+    #   ╚═════╝ ╚══════╝╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝╚═╝      #
+    #                                                    #
+    #            - MULTI-TOOL TERMINAL 2026 -            #
+    ######################################################
+"@ -ForegroundColor $green
+    Write-Host "    [ Use ARROWS to navigate | Press ENTER to select ]`n" -ForegroundColor $darkGreen
+}
+
+function Show-Menu {
+    param ([array]$Options)
     $selectedIndex = 0
     $key = $null
 
     while ($key -ne "Enter") {
-        Clear-Host
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host "      $Title" -ForegroundColor White -BackgroundColor DarkBlue
-        Write-Host "========================================" -ForegroundColor Cyan
-        Write-Host " Use UP/DOWN arrows and press ENTER:" -ForegroundColor Gray
-        Write-Host ""
-
+        Show-Header
         for ($i = 0; $i -lt $Options.Count; $i++) {
             if ($i -eq $selectedIndex) {
-                Write-Host "  > $($Options[$i])" -ForegroundColor Black -BackgroundColor White
+                Write-Host "  >> $($Options[$i])" -ForegroundColor $white -BackgroundColor $darkGreen
             } else {
-                Write-Host "    $($Options[$i])" -ForegroundColor White
+                Write-Host "     $($Options[$i])" -ForegroundColor $green
             }
         }
 
-        $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown").VirtualKeyCode
-        if ($key -eq 38) { $selectedIndex = ($selectedIndex - 1 + $Options.Count) % $Options.Count } # Up
-        if ($key -eq 40) { $selectedIndex = ($selectedIndex + 1) % $Options.Count } # Down
-        if ($key -eq 13) { return $selectedIndex } # Enter
+        $input = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        $key = $input.Character
+        $vKey = $input.VirtualKeyCode
+
+        if ($vKey -eq 38) { $selectedIndex = ($selectedIndex - 1 + $Options.Count) % $Options.Count } # Up
+        if ($vKey -eq 40) { $selectedIndex = ($selectedIndex + 1) % $Options.Count } # Down
+        if ($vKey -eq 13) { return $selectedIndex } # Enter
     }
 }
 
-# --- Main Logic ---
 $menuOptions = @(
-    "1. Open Microsoft Edge",
-    "2. Close Microsoft Edge",
-    "3. Open File Explorer",
-    "4. Close File Explorer (Restart Taskbar)",
-    "5. Open Settings",
-    "6. Open Microsoft Store",
-    "7. Open Calculator",
-    "8. Close Calculator",
-    "9. Take Screenshot (Full Screen)",
-    "10. RESTART LAPTOP",
-    "11. SHUTDOWN LAPTOP",
-    "EXIT"
+    "[1]  OPEN MICROSOFT EDGE",
+    "[2]  CLOSE MICROSOFT EDGE",
+    "[3]  OPEN FILE EXPLORER",
+    "[4]  CLOSE FILE EXPLORER",
+    "[5]  OPEN SETTINGS",
+    "[6]  OPEN MICROSOFT STORE",
+    "[7]  OPEN CALCULATOR",
+    "[8]  CLOSE CALCULATOR",
+    "[9]  TAKE SCREENSHOT (CLIPBOARD)",
+    "[10] RESTART LAPTOP",
+    "[11] SHUTDOWN LAPTOP",
+    "[!]  EXIT TOOL"
 )
 
+# --- Main Loop ---
 do {
     $choice = Show-Menu -Options $menuOptions
     
@@ -54,7 +71,7 @@ do {
         0 { Start-Process "msedge" }
         1 { Stop-Process -Name "msedge" -ErrorAction SilentlyContinue }
         2 { Start-Process "explorer.exe" }
-        3 { Stop-Process -Name "explorer" -Force -ErrorAction SilentlyContinue }
+        3 { taskkill /f /im explorer.exe; Start-Process explorer.exe } # Restarts Explorer
         4 { Start-Process "ms-settings:" }
         5 { Start-Process "ms-windows-store:" }
         6 { Start-Process "calc.exe" }
@@ -62,10 +79,19 @@ do {
         8 { 
             Add-Type -AssemblyName System.Windows.Forms
             [System.Windows.Forms.SendKeys]::SendWait("{PRTSC}")
-            Write-Host "Screenshot copied to Clipboard!" -ForegroundColor Green; Start-Sleep 1 
+            Write-Host "`n[+] Screenshot captured to Clipboard!" -ForegroundColor $white
+            Start-Sleep -Seconds 1
           }
-        9 { Restart-Computer -Confirm }
-        10 { Stop-Computer -Confirm }
-        11 { exit }
+        9 { 
+            Write-Host "`nWARNING: System will RESTART." -ForegroundColor $red
+            $confirm = Read-Host "Are you sure? (y/n)"
+            if ($confirm -eq 'y') { Restart-Computer }
+          }
+        10 { 
+            Write-Host "`nWARNING: System will SHUTDOWN." -ForegroundColor $red
+            $confirm = Read-Host "Are you sure? (y/n)"
+            if ($confirm -eq 'y') { Stop-Computer }
+          }
+        11 { Clear-Host; exit }
     }
 } while ($true)
